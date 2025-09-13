@@ -298,17 +298,42 @@
             const waveColor2Input = document.getElementById("waveColor2");
             const waveColor3Input = document.getElementById("waveColor3");
 
-            let bgTopColor = bgTopColorInput.value;
-            let bgBottomColor = bgBottomColorInput.value;
-            let waveColor1 = waveColor1Input.value;
-            let waveColor2 = waveColor2Input.value;
-            let waveColor3 = waveColor3Input.value;
+            const getFromLocalStorage = (key, defaultValue) => {
+                const value = localStorage.getItem(key);
+                return value ? value : defaultValue;
+            };
 
-            bgTopColorInput.addEventListener("input", (e) => bgTopColor = e.target.value);
-            bgBottomColorInput.addEventListener("input", (e) => bgBottomColor = e.target.value);
-            waveColor1Input.addEventListener("input", (e) => waveColor1 = e.target.value);
-            waveColor2Input.addEventListener("input", (e) => waveColor2 = e.target.value);
-            waveColor3Input.addEventListener("input", (e) => waveColor3 = e.target.value);
+            const updateLocalStorage = (key, value) => {
+                localStorage.setItem(key, value);
+            };
+
+
+            let bgTopColor = bgTopColorInput.value = getFromLocalStorage("bg-top", '#000000');
+            let bgBottomColor = bgBottomColorInput.value = getFromLocalStorage("bg-bottom", '#2d0769');
+            let waveColor1 = waveColor1Input.value = getFromLocalStorage("wave-1", '#ff6ec4');
+            let waveColor2 = waveColor2Input.value = getFromLocalStorage("wave-2", '#9d50bb');
+            let waveColor3 = waveColor3Input.value = getFromLocalStorage("wave-3", '#00d2ff');
+
+            bgTopColorInput.addEventListener("input", (e) => {
+                bgTopColor = e.target.value;
+                updateLocalStorage("bg-top", bgTopColor);
+            });
+            bgBottomColorInput.addEventListener("input", (e) => {
+                bgBottomColor = e.target.value;
+                updateLocalStorage("bg-bottom", bgBottomColor);
+            });
+            waveColor1Input.addEventListener("input", (e) => {
+                waveColor1 = e.target.value;
+                updateLocalStorage("wave-1", waveColor1);
+            });
+            waveColor2Input.addEventListener("input", (e) => {
+                waveColor2 = e.target.value;
+                updateLocalStorage("wave-2", waveColor2);
+            });
+            waveColor3Input.addEventListener("input", (e) => {
+                waveColor3 = e.target.value;
+                updateLocalStorage("wave-3", waveColor3);
+            });
 
             function draw() {
                 requestAnimationFrame(draw);
