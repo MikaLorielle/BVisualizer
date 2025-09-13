@@ -133,23 +133,23 @@
     <div id="controlPanel" aria-label="Control Panel">
         <div>
             <label for="bgTopColor">Background Top Color</label>
-            <input type="color" id="bgTopColor" value="#000000" />
+            <input type="color" id="bgTopColor" />
         </div>
         <div>
             <label for="bgBottomColor">Background Bottom Color</label>
-            <input type="color" id="bgBottomColor" value="#2d0769" />
+            <input type="color" id="bgBottomColor" />
         </div>
         <div>
             <label for="waveColor1">Wave Gradient Color 1</label>
-            <input type="color" id="waveColor1" value="#ff6ec4" />
+            <input type="color" id="waveColor1" />
         </div>
         <div>
             <label for="waveColor2">Wave Gradient Color 2</label>
-            <input type="color" id="waveColor2" value="#9d50bb" />
+            <input type="color" id="waveColor2" />
         </div>
         <div>
             <label for="waveColor3">Wave Gradient Color 3</label>
-            <input type="color" id="waveColor3" value="#00d2ff" />
+            <input type="color" id="waveColor3" />
         </div>
         <div style="margin-bottom: 1rem;">
             <label for="audioFileInput" id="audioFileInputLabel"
@@ -158,7 +158,7 @@
             </label>
             <input type="file" id="audioFileInput" accept="audio/*" class="hidden" />
 
-            <button id="resetColorsBtn" type="button"
+            <button id="resetSettingsBtn" type="button"
                 class="block w-full mt-3 bg-gradient-to-r from-cyan-400 via-indigo-600 to-purple-700 text-white font-semibold py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center cursor-pointer">
                 Reset Settings
             </button>
@@ -185,10 +185,73 @@
 
 
         <script>
+            const DEFAULT_VALUES = {
+                "bg-top": '#000000',
+                "bg-bottom": '#2d0769',
+                "wave-1": '#ff6ec4',
+                "wave-2": '#9d50bb',
+                "wave-3": '#00d2ff',
+                "key-play-pause": 'k',
+                "key-rewind": 'j',
+                "key-forward": 'l'
+            };
+
+            /**
+             * @type {Record<string, HTMLInputElement>}
+             */
+            const INPUTS = {
+                "bg-top": document.getElementById("bgTopColor"),
+                "bg-bottom": document.getElementById("bgBottomColor"),
+                "wave-1": document.getElementById("waveColor1"),
+                "wave-2": document.getElementById("waveColor2"),
+                "wave-3": document.getElementById("waveColor3"),
+                "key-play-pause": document.getElementById("keyPlayPause"),
+                "key-rewind": document.getElementById("keyRewind"),
+                "key-forward": document.getElementById("keyForward"),
+            }
+
+            function loadSettings() {
+                for (const key in DEFAULT_VALUES) {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        if (INPUTS[key].type === "color" || INPUTS[key].type === "text") {
+                            INPUTS[key].value = value;
+                        }
+                    } else {
+                        localStorage.setItem(key, DEFAULT_VALUES[key]);
+                        if (INPUTS[key].type === "color" || INPUTS[key].type === "text") {
+                            INPUTS[key].value = DEFAULT_VALUES[key];
+                        }
+                    }
+                }
+            }
+
+            function resetSettings() {
+                for (const key in DEFAULT_VALUES) {
+                    localStorage.setItem(key, DEFAULT_VALUES[key]);
+
+                    if (INPUTS[key]) {
+                        INPUTS[key].value = DEFAULT_VALUES[key];
+                        INPUTS[key].dispatchEvent(new Event('input'));
+                    }
+                }
+            }
+
+            loadSettings();
+            document.getElementById("resetSettingsBtn").addEventListener("click", resetSettings);
+
+            /**
+             * Get a value from localStorage, or return the default value for that key
+             *
+             * @param {keyof typeof DEFAULT_VALUES} key
+             * @return {string}
+             */
+            function getFromLocalStorage(key) {
+                const value = localStorage.getItem(key);
+                return value ? value : DEFAULT_VALUES[key] ?? '';
+            };
+
             let visualProgress = 0;
-            let keyPlayPause = 'k';
-            let keyRewind = 'j';
-            let keyForward = 'l';
             const canvas = document.getElementById("visualizer");
             const ctx = canvas.getContext("2d");
             let W, H;
@@ -305,41 +368,31 @@
             const waveColor2Input = document.getElementById("waveColor2");
             const waveColor3Input = document.getElementById("waveColor3");
 
-            const getFromLocalStorage = (key, defaultValue) => {
-                const value = localStorage.getItem(key);
-                return value ? value : defaultValue;
-            };
-
-            const updateLocalStorage = (key, value) => {
-                localStorage.setItem(key, value);
-            };
-
-
-            let bgTopColor = bgTopColorInput.value = getFromLocalStorage("bg-top", '#000000');
-            let bgBottomColor = bgBottomColorInput.value = getFromLocalStorage("bg-bottom", '#2d0769');
-            let waveColor1 = waveColor1Input.value = getFromLocalStorage("wave-1", '#ff6ec4');
-            let waveColor2 = waveColor2Input.value = getFromLocalStorage("wave-2", '#9d50bb');
-            let waveColor3 = waveColor3Input.value = getFromLocalStorage("wave-3", '#00d2ff');
+            let bgTopColor = bgTopColorInput.value;
+            let bgBottomColor = bgBottomColorInput.value;
+            let waveColor1 = waveColor1Input.value;
+            let waveColor2 = waveColor2Input.value;
+            let waveColor3 = waveColor3Input.value;
 
             bgTopColorInput.addEventListener("input", (e) => {
                 bgTopColor = e.target.value;
-                updateLocalStorage("bg-top", bgTopColor);
+                localStorage.setItem("bg-top", bgTopColor);
             });
             bgBottomColorInput.addEventListener("input", (e) => {
                 bgBottomColor = e.target.value;
-                updateLocalStorage("bg-bottom", bgBottomColor);
+                localStorage.setItem("bg-bottom", bgBottomColor);
             });
             waveColor1Input.addEventListener("input", (e) => {
                 waveColor1 = e.target.value;
-                updateLocalStorage("wave-1", waveColor1);
+                localStorage.setItem("wave-1", waveColor1);
             });
             waveColor2Input.addEventListener("input", (e) => {
                 waveColor2 = e.target.value;
-                updateLocalStorage("wave-2", waveColor2);
+                localStorage.setItem("wave-2", waveColor2);
             });
             waveColor3Input.addEventListener("input", (e) => {
                 waveColor3 = e.target.value;
-                updateLocalStorage("wave-3", waveColor3);
+                localStorage.setItem("wave-3", waveColor3);
             });
 
             function draw() {
@@ -516,6 +569,14 @@
 
             draw();
 
+            const keyPlayPauseInput = document.getElementById("keyPlayPause");
+            const keyRewindInput = document.getElementById("keyRewind");
+            const keyForwardInput = document.getElementById("keyForward");
+
+            let keyPlayPause = keyPlayPauseInput.value;
+            let keyRewind = keyRewindInput.value;
+            let keyForward = keyForwardInput.value;
+
             document.addEventListener("keydown", (e) => {
                 if (e.target.closest("input, textarea, select")) return;
 
@@ -538,6 +599,7 @@
             });
 
             document.getElementById("keyPlayPause").addEventListener("input", (e) => {
+                e.target.value = e.target.value.slice(-1);
                 keyPlayPause = e.target.value.toLowerCase();
             });
 
@@ -547,10 +609,6 @@
 
             document.getElementById("keyForward").addEventListener("input", (e) => {
                 keyForward = e.target.value.toLowerCase();
-            });
-            document.getElementById("keyPlayPause").addEventListener("input", (e) => {
-                e.target.value = e.target.value.slice(-1);
-                keyPlayPause = e.target.value.toLowerCase();
             });
 
             document.getElementById("keyRewind").addEventListener("input", (e) => {
