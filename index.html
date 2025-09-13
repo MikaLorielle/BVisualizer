@@ -219,467 +219,466 @@
             </div>
         </div>
         <small>Press <b>F</b> to toggle this panel.</small>
+    </div>
+    <script>
+        const DEFAULT_VALUES = {
+            "bg-top": '#000000',
+            "bg-bottom": '#2d0769',
+            "wave-1": '#ff6ec4',
+            "wave-2": '#9d50bb',
+            "wave-3": '#00d2ff',
+            "key-play-pause": 'k',
+            "key-rewind": 'j',
+            "key-forward": 'l'
+        };
 
+        const INPUTS = {
+            "bg-top": document.getElementById("bgTopColor"),
+            "bg-bottom": document.getElementById("bgBottomColor"),
+            "wave-1": document.getElementById("waveColor1"),
+            "wave-2": document.getElementById("waveColor2"),
+            "wave-3": document.getElementById("waveColor3"),
+            "key-play-pause": document.getElementById("keyPlayPause"),
+            "key-rewind": document.getElementById("keyRewind"),
+            "key-forward": document.getElementById("keyForward"),
+        }
 
-        <script>
-            const DEFAULT_VALUES = {
-                "bg-top": '#000000',
-                "bg-bottom": '#2d0769',
-                "wave-1": '#ff6ec4',
-                "wave-2": '#9d50bb',
-                "wave-3": '#00d2ff',
-                "key-play-pause": 'k',
-                "key-rewind": 'j',
-                "key-forward": 'l'
-            };
-
-            const INPUTS = {
-                "bg-top": document.getElementById("bgTopColor"),
-                "bg-bottom": document.getElementById("bgBottomColor"),
-                "wave-1": document.getElementById("waveColor1"),
-                "wave-2": document.getElementById("waveColor2"),
-                "wave-3": document.getElementById("waveColor3"),
-                "key-play-pause": document.getElementById("keyPlayPause"),
-                "key-rewind": document.getElementById("keyRewind"),
-                "key-forward": document.getElementById("keyForward"),
+        /**
+         * @param {keyof typeof DEFAULT_VALUES} key
+         *
+         * @returns {HTMLInputElement}
+         */
+        function getInput(key) {
+            if (!INPUTS[key]) {
+                throw new Error(`Input element for key "${key}" not found.`);
             }
 
-            /**
-             * @param {keyof typeof DEFAULT_VALUES} key
-             *
-             * @returns {HTMLInputElement}
-             */
-            function getInput(key) {
-                if (!INPUTS[key]) {
-                    throw new Error(`Input element for key "${key}" not found.`);
-                }
+            return INPUTS[key];
+        }
 
-                return INPUTS[key];
-            }
-
-            function loadSettings() {
-                for (const key in DEFAULT_VALUES) {
-                    const value = localStorage.getItem(key);
-                    if (value) {
-                        if (INPUTS[key].type === "color" || INPUTS[key].type === "text") {
-                            INPUTS[key].value = value;
-                        }
-                    } else {
-                        localStorage.setItem(key, DEFAULT_VALUES[key]);
-                        if (INPUTS[key].type === "color" || INPUTS[key].type === "text") {
-                            INPUTS[key].value = DEFAULT_VALUES[key];
-                        }
-                    }
-                }
-            }
-
-            function resetSettings() {
-                for (const key in DEFAULT_VALUES) {
-                    localStorage.setItem(key, DEFAULT_VALUES[key]);
-
-                    if (INPUTS[key]) {
-                        INPUTS[key].value = DEFAULT_VALUES[key];
-                        INPUTS[key].dispatchEvent(new Event('input'));
-                    }
-                }
-            }
-
-            loadSettings();
-            document.getElementById("resetSettingsBtn").addEventListener("click", resetSettings);
-
-            /**
-             * Get a value from localStorage, or return the default value for that key
-             *
-             * @param {keyof typeof DEFAULT_VALUES} key
-             * @return {string}
-             */
-            function getSettingFromLocalStorage(key) {
-                if (!(key in DEFAULT_VALUES)) {
-                    throw new Error(`Key "${key}" is not defined in DEFAULT_VALUES.`);
-                }
-
+        function loadSettings() {
+            for (const key in DEFAULT_VALUES) {
                 const value = localStorage.getItem(key);
-                return value ? value : DEFAULT_VALUES[key];
-            };
-
-            function saveSettingToLocalStorage(key, value) {
-                if (!(key in DEFAULT_VALUES)) {
-                    throw new Error(`Key "${key}" is not defined in DEFAULT_VALUES.`);
-                }
-
-                localStorage.setItem(key, value);
-            }
-
-            let visualProgress = 0;
-            const canvas = document.getElementById("visualizer");
-            const ctx = canvas.getContext("2d");
-            let W, H;
-            function resize() {
-                W = window.innerWidth;
-                H = window.innerHeight;
-                canvas.width = W;
-                canvas.height = H;
-            }
-            resize();
-            window.addEventListener("resize", resize);
-
-            const audioNameDiv = document.getElementById("audioName");
-            const audioFileInput = document.getElementById("audioFileInput");
-            const audio = document.getElementById("audio");
-
-            audioNameDiv.innerHTML = '<p>No audio loaded</span><p class="text-[1.5rem] mx-auto w-fit">Press F to open panel.</p>';
-
-            audioFileInput.addEventListener("change", (e) => {
-                const files = e.target.files;
-                if (files.length === 0) return;
-
-                const file = files[0];
-                const fileURL = URL.createObjectURL(file);
-
-                audio.pause();
-                audio.src = fileURL;
-                audio.load();
-
-                audioNameDiv.textContent = file.name;
-
-                if (audioCtx.state === "suspended") {
-                    audioCtx.resume();
-                }
-
-                audio.play();
-            });
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const audioCtx = new AudioContext();
-            const source = audioCtx.createMediaElementSource(audio);
-            const analyser = audioCtx.createAnalyser();
-            source.connect(analyser);
-            analyser.connect(audioCtx.destination);
-
-            analyser.fftSize = 2048;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            const freqArray = new Uint8Array(bufferLength);
-
-            const particles = [];
-            const particleCount = 60;
-
-            class Particle {
-                constructor() {
-                    this.reset();
-                }
-                reset() {
-                    this.x = Math.random() * W;
-                    this.y = Math.random() * H;
-                    this.size = 0.5 + Math.random() * 1.5;
-                    this.speedX = (Math.random() - 0.5) * 0.2;
-                    this.speedY = (Math.random() - 0.5) * 0.2;
-                    this.alpha = 0.1 + Math.random() * 0.1;
-                }
-                update() {
-                    this.x += this.speedX;
-                    this.y += this.speedY;
-                    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) {
-                        this.reset();
+                if (value) {
+                    if (INPUTS[key].type === "color" || INPUTS[key].type === "text") {
+                        INPUTS[key].value = value;
+                    }
+                } else {
+                    localStorage.setItem(key, DEFAULT_VALUES[key]);
+                    if (INPUTS[key].type === "color" || INPUTS[key].type === "text") {
+                        INPUTS[key].value = DEFAULT_VALUES[key];
                     }
                 }
-                draw(ctx) {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(200, 180, 255, ${this.alpha})`;
-                    ctx.shadowColor = `rgba(200, 180, 255, ${this.alpha})`;
-                    ctx.shadowBlur = 5;
-                    ctx.fill();
+            }
+        }
+
+        function resetSettings() {
+            for (const key in DEFAULT_VALUES) {
+                localStorage.setItem(key, DEFAULT_VALUES[key]);
+
+                if (INPUTS[key]) {
+                    INPUTS[key].value = DEFAULT_VALUES[key];
+                    INPUTS[key].dispatchEvent(new Event('input'));
                 }
             }
+        }
 
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(new Particle());
+        loadSettings();
+        document.getElementById("resetSettingsBtn").addEventListener("click", resetSettings);
+
+        /**
+         * Get a value from localStorage, or return the default value for that key
+         *
+         * @param {keyof typeof DEFAULT_VALUES} key
+         * @return {string}
+         */
+        function getSettingFromLocalStorage(key) {
+            if (!(key in DEFAULT_VALUES)) {
+                throw new Error(`Key "${key}" is not defined in DEFAULT_VALUES.`);
             }
 
-            let pointsCount = 60;
-            const pointsMin = 20;
-            const pointsMax = 150;
+            const value = localStorage.getItem(key);
+            return value ? value : DEFAULT_VALUES[key];
+        };
 
-            function smoothCurve(ctx, points) {
-                if (points.length < 3) {
-                    ctx.lineTo(points[0].x, points[0].y);
-                    return;
-                }
-                ctx.moveTo(points[0].x, points[0].y);
-
-                for (let i = 1; i < points.length - 2; i++) {
-                    const xc = (points[i].x + points[i + 1].x) / 2;
-                    const yc = (points[i].y + points[i + 1].y) / 2;
-                    ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-                }
-                ctx.quadraticCurveTo(
-                    points[points.length - 2].x,
-                    points[points.length - 2].y,
-                    points[points.length - 1].x,
-                    points[points.length - 1].y
-                );
+        function saveSettingToLocalStorage(key, value) {
+            if (!(key in DEFAULT_VALUES)) {
+                throw new Error(`Key "${key}" is not defined in DEFAULT_VALUES.`);
             }
 
-            const controlPanel = document.getElementById("controlPanel");
-            const bgTopColorInput = getInput("bg-top");
-            const bgBottomColorInput = getInput("bg-bottom");
-            const waveColor1Input = getInput("wave-1");
-            const waveColor2Input = getInput("wave-2");
-            const waveColor3Input = getInput("wave-3");
+            localStorage.setItem(key, value);
+        }
 
-            let bgTopColor = bgTopColorInput.value;
-            let bgBottomColor = bgBottomColorInput.value;
-            let waveColor1 = waveColor1Input.value;
-            let waveColor2 = waveColor2Input.value;
-            let waveColor3 = waveColor3Input.value;
+        let visualProgress = 0;
+        const canvas = document.getElementById("visualizer");
+        const ctx = canvas.getContext("2d");
+        let W, H;
+        function resize() {
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W;
+            canvas.height = H;
+        }
+        resize();
+        window.addEventListener("resize", resize);
 
-            bgTopColorInput.addEventListener("input", (e) => {
-                bgTopColor = e.target.value;
-                saveSettingToLocalStorage("bg-top", bgTopColor);
-            });
+        const audioNameDiv = document.getElementById("audioName");
+        const audioFileInput = document.getElementById("audioFileInput");
+        const audio = document.getElementById("audio");
 
-            bgBottomColorInput.addEventListener("input", (e) => {
-                bgBottomColor = e.target.value;
-                saveSettingToLocalStorage("bg-bottom", bgBottomColor);
-            });
+        audioNameDiv.innerHTML = '<p>No audio loaded</span><p class="text-[1.5rem] mx-auto w-fit">Press F to open panel.</p>';
 
-            waveColor1Input.addEventListener("input", (e) => {
-                waveColor1 = e.target.value;
-                saveSettingToLocalStorage("wave-1", waveColor1);
-            });
+        audioFileInput.addEventListener("change", (e) => {
+            const files = e.target.files;
+            if (files.length === 0) return;
 
-            waveColor2Input.addEventListener("input", (e) => {
-                waveColor2 = e.target.value;
-                saveSettingToLocalStorage("wave-2", waveColor2);
-            });
+            const file = files[0];
+            const fileURL = URL.createObjectURL(file);
 
-            waveColor3Input.addEventListener("input", (e) => {
-                waveColor3 = e.target.value;
-                saveSettingToLocalStorage("wave-3", waveColor3);
-            });
+            audio.pause();
+            audio.src = fileURL;
+            audio.load();
 
-            function draw() {
-                requestAnimationFrame(draw);
-                audioNameDiv.style.left = (W / 2) + "px";
-                audioNameDiv.style.top = (H * 0.425) + "px";
+            audioNameDiv.textContent = file.name;
 
-                const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-                bgGrad.addColorStop(0, bgTopColor);
-                bgGrad.addColorStop(1, bgBottomColor);
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, W, H);
-
-                particles.forEach(p => {
-                    p.update();
-                    p.draw(ctx);
-                });
-
-                analyser.getByteTimeDomainData(dataArray);
-
-                const step = Math.floor(bufferLength / pointsCount);
-                const points = [];
-                for (let i = 0; i < pointsCount; i++) {
-                    const val = dataArray[i * step] / 128.0;
-                    const x = (i / (pointsCount - 1)) * W;
-
-                    const y = val * (H * 0.4) / 2 + H * 0.35;
-                    points.push({ x, y });
-                }
-
-                const waveGradient = ctx.createLinearGradient(0, H * 0.65, W, H);
-                waveGradient.addColorStop(0, waveColor1);
-                waveGradient.addColorStop(0.5, waveColor2);
-                waveGradient.addColorStop(1, waveColor3);
-
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = waveGradient;
-                ctx.shadowColor = waveGradient;
-                ctx.shadowBlur = 25;
-
-                ctx.beginPath();
-                smoothCurve(ctx, points);
-                ctx.stroke();
-
-                analyser.getByteFrequencyData(freqArray);
-                const barCount = 60;
-                const maxBarHeight = H * 0.25;
-                const barPoints = [];
-                const offsetX = 0;
-                const stretchPx = 25;
-
-                for (let i = 0; i < barCount; i++) {
-                    const value = freqArray[i];
-                    const barHeight = (value / 255) * maxBarHeight;
-
-                    const x = offsetX + (i / (barCount - 1)) * (W + stretchPx);
-                    const y = H - barHeight;
-
-                    barPoints.push({ x, y });
-                }
-
-
-                const barGradient = ctx.createLinearGradient(0, H * 0.7, 0, H);
-                barGradient.addColorStop(0, waveColor3);
-                barGradient.addColorStop(0.5, waveColor2);
-                barGradient.addColorStop(1, waveColor1);
-
-                ctx.fillStyle = barGradient;
-                ctx.shadowColor = barGradient;
-                ctx.shadowBlur = 25;
-
-                ctx.beginPath();
-                ctx.moveTo(barPoints[0].x, H);
-
-                for (let i = 0; i < barPoints.length - 1; i++) {
-                    const cpX = (barPoints[i].x + barPoints[i + 1].x) / 2;
-                    const cpY = (barPoints[i].y + barPoints[i + 1].y) / 2;
-                    ctx.quadraticCurveTo(barPoints[i].x, barPoints[i].y, cpX, cpY);
-                }
-
-                ctx.lineTo(barPoints[barPoints.length - 1].x, H);
-                ctx.closePath();
-                ctx.fill();
-                drawProgressBar();
+            if (audioCtx.state === "suspended") {
+                audioCtx.resume();
             }
 
-            const sparkleCount = 30;
-            const sparkles = [];
-            class Sparkle {
-                constructor() {
+            audio.play();
+        });
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(audio);
+        const analyser = audioCtx.createAnalyser();
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+
+        analyser.fftSize = 2048;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        const freqArray = new Uint8Array(bufferLength);
+
+        const particles = [];
+        const particleCount = 60;
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * W;
+                this.y = Math.random() * H;
+                this.size = 0.5 + Math.random() * 1.5;
+                this.speedX = (Math.random() - 0.5) * 0.2;
+                this.speedY = (Math.random() - 0.5) * 0.2;
+                this.alpha = 0.1 + Math.random() * 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) {
                     this.reset();
                 }
-                reset() {
-                    this.x = Math.random();
-                    this.y = (Math.random() - 0.5) * 10;
-                    this.size = 1 + Math.random() * 1.5;
-                    this.speed = 0.001 + Math.random() * 0.003;
-                    this.alpha = 0.4 + Math.random() * 0.6;
-                }
-                update() {
-                    this.x += this.speed;
-                    if (this.x > 1) this.reset();
-                }
-                draw(ctx, px, py, width) {
-                    const drawX = px + this.x * width;
-                    const drawY = py + this.y;
-                    ctx.beginPath();
-                    ctx.arc(drawX, drawY, this.size, 0, Math.PI * 2);
-                    const gradient = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, this.size * 3);
-                    gradient.addColorStop(0, `rgba(255,255,255,${this.alpha})`);
-                    gradient.addColorStop(1, 'rgba(255,255,255,0)');
-                    ctx.fillStyle = gradient;
-                    ctx.fill();
-                }
             }
-
-            for (let i = 0; i < sparkleCount; i++) {
-                sparkles.push(new Sparkle());
-            }
-
-            function drawProgressBar() {
-                if (!audio.duration) return;
-
-                const margin = 40;
-                const barWidth = W * 0.5;
-                const barHeight = 16;
-                const posX = (W - barWidth) / 2;
-                const posY = H * 0.1;
-
-                const targetProgress = audio.currentTime / audio.duration || 0;
-                visualProgress += (targetProgress - visualProgress) * 0.1;
-
-                ctx.fillStyle = 'rgba(255,255,255,0.1)';
-                ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-                ctx.lineWidth = 2;
+            draw(ctx) {
                 ctx.beginPath();
-                ctx.roundRect(posX, posY, barWidth, barHeight, 8);
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(200, 180, 255, ${this.alpha})`;
+                ctx.shadowColor = `rgba(200, 180, 255, ${this.alpha})`;
+                ctx.shadowBlur = 5;
                 ctx.fill();
-                ctx.stroke();
+            }
+        }
 
-                const grad = ctx.createLinearGradient(posX, 0, posX + barWidth, 0);
-                grad.addColorStop(0, '#ff6ec4');
-                grad.addColorStop(0.5, '#9d50bb');
-                grad.addColorStop(1, '#00d2ff');
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
 
-                ctx.fillStyle = grad;
-                ctx.shadowColor = 'rgba(157, 80, 187, 0.7)';
-                ctx.shadowBlur = 15;
+        let pointsCount = 60;
+        const pointsMin = 20;
+        const pointsMax = 150;
 
-                ctx.beginPath();
-                ctx.roundRect(posX, posY, barWidth * visualProgress, barHeight, 8);
-                ctx.fill();
+        function smoothCurve(ctx, points) {
+            if (points.length < 3) {
+                ctx.lineTo(points[0].x, points[0].y);
+                return;
+            }
+            ctx.moveTo(points[0].x, points[0].y);
 
-                ctx.shadowBlur = 0;
-                ctx.shadowColor = 'transparent';
+            for (let i = 1; i < points.length - 2; i++) {
+                const xc = (points[i].x + points[i + 1].x) / 2;
+                const yc = (points[i].y + points[i + 1].y) / 2;
+                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            }
+            ctx.quadraticCurveTo(
+                points[points.length - 2].x,
+                points[points.length - 2].y,
+                points[points.length - 1].x,
+                points[points.length - 1].y
+            );
+        }
 
-                sparkles.forEach(s => {
-                    s.update();
-                    s.draw(ctx, posX, posY + barHeight / 2, barWidth * visualProgress);
-                });
+        const controlPanel = document.getElementById("controlPanel");
+        const bgTopColorInput = getInput("bg-top");
+        const bgBottomColorInput = getInput("bg-bottom");
+        const waveColor1Input = getInput("wave-1");
+        const waveColor2Input = getInput("wave-2");
+        const waveColor3Input = getInput("wave-3");
+
+        let bgTopColor = bgTopColorInput.value;
+        let bgBottomColor = bgBottomColorInput.value;
+        let waveColor1 = waveColor1Input.value;
+        let waveColor2 = waveColor2Input.value;
+        let waveColor3 = waveColor3Input.value;
+
+        bgTopColorInput.addEventListener("input", (e) => {
+            bgTopColor = e.target.value;
+            saveSettingToLocalStorage("bg-top", bgTopColor);
+        });
+
+        bgBottomColorInput.addEventListener("input", (e) => {
+            bgBottomColor = e.target.value;
+            saveSettingToLocalStorage("bg-bottom", bgBottomColor);
+        });
+
+        waveColor1Input.addEventListener("input", (e) => {
+            waveColor1 = e.target.value;
+            saveSettingToLocalStorage("wave-1", waveColor1);
+        });
+
+        waveColor2Input.addEventListener("input", (e) => {
+            waveColor2 = e.target.value;
+            saveSettingToLocalStorage("wave-2", waveColor2);
+        });
+
+        waveColor3Input.addEventListener("input", (e) => {
+            waveColor3 = e.target.value;
+            saveSettingToLocalStorage("wave-3", waveColor3);
+        });
+
+        function draw() {
+            requestAnimationFrame(draw);
+            audioNameDiv.style.left = (W / 2) + "px";
+            audioNameDiv.style.top = (H * 0.425) + "px";
+
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+            bgGrad.addColorStop(0, bgTopColor);
+            bgGrad.addColorStop(1, bgBottomColor);
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw(ctx);
+            });
+
+            analyser.getByteTimeDomainData(dataArray);
+
+            const step = Math.floor(bufferLength / pointsCount);
+            const points = [];
+            for (let i = 0; i < pointsCount; i++) {
+                const val = dataArray[i * step] / 128.0;
+                const x = (i / (pointsCount - 1)) * W;
+
+                const y = val * (H * 0.4) / 2 + H * 0.35;
+                points.push({ x, y });
             }
 
-            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
-                if (w < 2 * r) r = w / 2;
-                if (h < 2 * r) r = h / 2;
-                this.beginPath();
-                this.moveTo(x + r, y);
-                this.arcTo(x + w, y, x + w, y + h, r);
-                this.arcTo(x + w, y + h, x, y + h, r);
-                this.arcTo(x, y + h, x, y, r);
-                this.arcTo(x, y, x + w, y, r);
-                this.closePath();
-                return this;
-            };
+            const waveGradient = ctx.createLinearGradient(0, H * 0.65, W, H);
+            waveGradient.addColorStop(0, waveColor1);
+            waveGradient.addColorStop(0.5, waveColor2);
+            waveGradient.addColorStop(1, waveColor3);
 
-            draw();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = waveGradient;
+            ctx.shadowColor = waveGradient;
+            ctx.shadowBlur = 25;
 
-            const keyPlayPauseInput = getInput("key-play-pause");
-            const keyRewindInput = getInput("key-rewind");
-            const keyForwardInput = getInput("key-forward");
+            ctx.beginPath();
+            smoothCurve(ctx, points);
+            ctx.stroke();
 
-            let keyPlayPause = keyPlayPauseInput.value;
-            let keyRewind = keyRewindInput.value;
-            let keyForward = keyForwardInput.value;
+            analyser.getByteFrequencyData(freqArray);
+            const barCount = 60;
+            const maxBarHeight = H * 0.25;
+            const barPoints = [];
+            const offsetX = 0;
+            const stretchPx = 25;
 
-            document.addEventListener("keydown", (e) => {
-                if (e.target.closest("input, textarea, select")) return;
+            for (let i = 0; i < barCount; i++) {
+                const value = freqArray[i];
+                const barHeight = (value / 255) * maxBarHeight;
 
-                const key = e.key.toLowerCase();
+                const x = offsetX + (i / (barCount - 1)) * (W + stretchPx);
+                const y = H - barHeight;
 
-                if (key === ">") {
-                    pointsCount = Math.min(pointsCount + 5, pointsMax);
-                } else if (key === "<") {
-                    pointsCount = Math.max(pointsCount - 5, pointsMin);
-                } else if (key === "f") {
-                    controlPanel.style.display = controlPanel.style.display === "none" || controlPanel.style.display === "" ? "block" : "none";
-                } else if (key === keyPlayPause) {
-                    if (audioCtx.state === "suspended") audioCtx.resume();
-                    audio.paused ? audio.play() : audio.pause();
-                } else if (key === keyRewind) {
-                    audio.currentTime = Math.max(audio.currentTime - 10, 0);
-                } else if (key === keyForward) {
-                    audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
-                }
+                barPoints.push({ x, y });
+            }
+
+
+            const barGradient = ctx.createLinearGradient(0, H * 0.7, 0, H);
+            barGradient.addColorStop(0, waveColor3);
+            barGradient.addColorStop(0.5, waveColor2);
+            barGradient.addColorStop(1, waveColor1);
+
+            ctx.fillStyle = barGradient;
+            ctx.shadowColor = barGradient;
+            ctx.shadowBlur = 25;
+
+            ctx.beginPath();
+            ctx.moveTo(barPoints[0].x, H);
+
+            for (let i = 0; i < barPoints.length - 1; i++) {
+                const cpX = (barPoints[i].x + barPoints[i + 1].x) / 2;
+                const cpY = (barPoints[i].y + barPoints[i + 1].y) / 2;
+                ctx.quadraticCurveTo(barPoints[i].x, barPoints[i].y, cpX, cpY);
+            }
+
+            ctx.lineTo(barPoints[barPoints.length - 1].x, H);
+            ctx.closePath();
+            ctx.fill();
+            drawProgressBar();
+        }
+
+        const sparkleCount = 30;
+        const sparkles = [];
+        class Sparkle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random();
+                this.y = (Math.random() - 0.5) * 10;
+                this.size = 1 + Math.random() * 1.5;
+                this.speed = 0.001 + Math.random() * 0.003;
+                this.alpha = 0.4 + Math.random() * 0.6;
+            }
+            update() {
+                this.x += this.speed;
+                if (this.x > 1) this.reset();
+            }
+            draw(ctx, px, py, width) {
+                const drawX = px + this.x * width;
+                const drawY = py + this.y;
+                ctx.beginPath();
+                ctx.arc(drawX, drawY, this.size, 0, Math.PI * 2);
+                const gradient = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, this.size * 3);
+                gradient.addColorStop(0, `rgba(255,255,255,${this.alpha})`);
+                gradient.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < sparkleCount; i++) {
+            sparkles.push(new Sparkle());
+        }
+
+        function drawProgressBar() {
+            if (!audio.duration) return;
+
+            const margin = 40;
+            const barWidth = W * 0.5;
+            const barHeight = 16;
+            const posX = (W - barWidth) / 2;
+            const posY = H * 0.1;
+
+            const targetProgress = audio.currentTime / audio.duration || 0;
+            visualProgress += (targetProgress - visualProgress) * 0.1;
+
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(posX, posY, barWidth, barHeight, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            const grad = ctx.createLinearGradient(posX, 0, posX + barWidth, 0);
+            grad.addColorStop(0, '#ff6ec4');
+            grad.addColorStop(0.5, '#9d50bb');
+            grad.addColorStop(1, '#00d2ff');
+
+            ctx.fillStyle = grad;
+            ctx.shadowColor = 'rgba(157, 80, 187, 0.7)';
+            ctx.shadowBlur = 15;
+
+            ctx.beginPath();
+            ctx.roundRect(posX, posY, barWidth * visualProgress, barHeight, 8);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+
+            sparkles.forEach(s => {
+                s.update();
+                s.draw(ctx, posX, posY + barHeight / 2, barWidth * visualProgress);
             });
+        }
 
-            keyPlayPauseInput.addEventListener("input", (e) => {
-                e.target.value = e.target.value.slice(-1);
-                keyPlayPause = e.target.value.toLowerCase();
-                saveSettingToLocalStorage("key-play-pause", keyPlayPause);
-            });
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            this.beginPath();
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            this.closePath();
+            return this;
+        };
 
-            keyRewindInput.addEventListener("input", (e) => {
-                e.target.value = e.target.value.slice(-1);
-                keyRewind = e.target.value.toLowerCase();
-                saveSettingToLocalStorage("key-rewind", keyRewind);
-            });
+        draw();
 
-            keyForwardInput.addEventListener("input", (e) => {
-                e.target.value = e.target.value.slice(-1);
-                keyForward = e.target.value.toLowerCase();
-                saveSettingToLocalStorage("key-forward", keyForward);
-            });
-        </script>
+        const keyPlayPauseInput = getInput("key-play-pause");
+        const keyRewindInput = getInput("key-rewind");
+        const keyForwardInput = getInput("key-forward");
+
+        let keyPlayPause = keyPlayPauseInput.value;
+        let keyRewind = keyRewindInput.value;
+        let keyForward = keyForwardInput.value;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.target.closest("input, textarea, select")) return;
+
+            const key = e.key.toLowerCase();
+
+            if (key === ">") {
+                pointsCount = Math.min(pointsCount + 5, pointsMax);
+            } else if (key === "<") {
+                pointsCount = Math.max(pointsCount - 5, pointsMin);
+            } else if (key === "f") {
+                controlPanel.style.display = controlPanel.style.display === "none" || controlPanel.style.display === "" ? "block" : "none";
+            } else if (key === keyPlayPause) {
+                if (audioCtx.state === "suspended") audioCtx.resume();
+                audio.paused ? audio.play() : audio.pause();
+            } else if (key === keyRewind) {
+                audio.currentTime = Math.max(audio.currentTime - 10, 0);
+            } else if (key === keyForward) {
+                audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
+            }
+        });
+
+        keyPlayPauseInput.addEventListener("input", (e) => {
+            e.target.value = e.target.value.slice(-1);
+            keyPlayPause = e.target.value.toLowerCase();
+            saveSettingToLocalStorage("key-play-pause", keyPlayPause);
+        });
+
+        keyRewindInput.addEventListener("input", (e) => {
+            e.target.value = e.target.value.slice(-1);
+            keyRewind = e.target.value.toLowerCase();
+            saveSettingToLocalStorage("key-rewind", keyRewind);
+        });
+
+        keyForwardInput.addEventListener("input", (e) => {
+            e.target.value = e.target.value.slice(-1);
+            keyForward = e.target.value.toLowerCase();
+            saveSettingToLocalStorage("key-forward", keyForward);
+        });
+    </script>
 </body>
 
 </html>
