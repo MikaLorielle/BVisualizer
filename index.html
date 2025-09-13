@@ -198,7 +198,7 @@
             const audioFileInput = document.getElementById("audioFileInput");
             const audio = document.getElementById("audio");
 
-            audioNameDiv.textContent = 'No audio loaded';
+            audioNameDiv.innerHTML = '<p>No audio loaded</span><p class="text-[1.5rem] mx-auto w-fit">Press F to open panel.</p>';
 
             audioFileInput.addEventListener("change", (e) => {
                 const files = e.target.files;
