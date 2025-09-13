@@ -152,10 +152,16 @@
             <input type="color" id="waveColor3" value="#00d2ff" />
         </div>
         <div style="margin-bottom: 1rem;">
-            <label for="audioFileInput" id="audioFileInputLabel" style="display: inline-block; cursor: pointer; user-select: none; font-weight: 600; background: linear-gradient(90deg, #9d50bb, #6e48aa); color: white; padding: 0.5rem 1.2rem; border-radius: 0.4rem; box-shadow: 0 2px 8px #0002; transition: background 0.2s, transform 0.2s; font-size: 1rem; text-align: center;">
-                <span id="audioFileInputLabelText">Import Song</span>
+            <label for="audioFileInput" id="audioFileInputLabel"
+                class="inline-block cursor-pointer select-none font-semibold bg-gradient-to-r from-purple-500 via-purple-700 to-indigo-700 text-white py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center w-full">
+                <span id="audioFileInputLabelText" class="text-base">Import Song</span>
             </label>
-            <input type="file" id="audioFileInput" accept="audio/*" style="display: none;" />
+            <input type="file" id="audioFileInput" accept="audio/*" class="hidden" />
+
+            <button id="resetColorsBtn" type="button"
+                class="block w-full mt-3 bg-gradient-to-r from-cyan-400 via-indigo-600 to-purple-700 text-white font-semibold py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center cursor-pointer">
+                Reset Settings
+            </button>
         </div>
         <div style="margin-top: 1rem;">
             <label>Keybindings</label>
