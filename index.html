@@ -152,9 +152,10 @@
             <input type="color" id="waveColor3" value="#00d2ff" />
         </div>
         <div style="margin-bottom: 1rem;">
-            <label for="audioFileInput" style="cursor: pointer; user-select: none; font-weight: 600;">Import
-                Song</label>
-            <input type="file" id="audioFileInput" accept="audio/*" style="width: 100%; margin-top: 0.25rem;" />
+            <label for="audioFileInput" id="audioFileInputLabel" style="display: inline-block; cursor: pointer; user-select: none; font-weight: 600; background: linear-gradient(90deg, #9d50bb, #6e48aa); color: white; padding: 0.5rem 1.2rem; border-radius: 0.4rem; box-shadow: 0 2px 8px #0002; transition: background 0.2s, transform 0.2s; font-size: 1rem; text-align: center;">
+                <span id="audioFileInputLabelText">Import Song</span>
+            </label>
+            <input type="file" id="audioFileInput" accept="audio/*" style="display: none;" />
         </div>
         <div style="margin-top: 1rem;">
             <label>Keybindings</label>
