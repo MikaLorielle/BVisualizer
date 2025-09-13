@@ -620,19 +620,19 @@
 
                 const key = e.key.toLowerCase();
 
-                if (key === keyPlayPause) {
+                if (key === ">") {
+                    pointsCount = Math.min(pointsCount + 5, pointsMax);
+                } else if (key === "<") {
+                    pointsCount = Math.max(pointsCount - 5, pointsMin);
+                } else if (key === "f") {
+                    controlPanel.style.display = controlPanel.style.display === "none" || controlPanel.style.display === "" ? "block" : "none";
+                } else if (key === keyPlayPause) {
                     if (audioCtx.state === "suspended") audioCtx.resume();
                     audio.paused ? audio.play() : audio.pause();
                 } else if (key === keyRewind) {
                     audio.currentTime = Math.max(audio.currentTime - 10, 0);
                 } else if (key === keyForward) {
                     audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
-                } else if (key === ">") {
-                    pointsCount = Math.min(pointsCount + 5, pointsMax);
-                } else if (key === "<") {
-                    pointsCount = Math.max(pointsCount - 5, pointsMin);
-                } else if (key === "f") {
-                    controlPanel.style.display = controlPanel.style.display === "none" || controlPanel.style.display === "" ? "block" : "none";
                 }
             });
 
