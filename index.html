@@ -325,10 +325,30 @@
         const audioNameDiv = document.getElementById("audioName");
         const audioFileInput = document.getElementById("audioFileInput");
         const audio = document.getElementById("audio");
+        let firstAudioFileLoaded = false;
 
-        audioNameDiv.innerHTML = '<p>No audio loaded</span><p class="text-[1.5rem] mx-auto w-fit">Press F to open panel.</p>';
+        document.addEventListener('click', (e) => {
+            if (controlPanel.contains(e.target)) {
+                return;
+            }
+
+            if (!firstAudioFileLoaded) {
+                return audioFileInput.click();
+            }
+
+            if (audioCtx.state === "suspended") {
+                audioCtx.resume();
+            } else if (!audio.paused) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
+        });
+
+        audioNameDiv.innerHTML = '<p class="mx-auto w-fit">No audio loaded</p><p class="text-[1.5rem] mx-auto w-fit">Press F to open panel or click to select a song.</p>';
 
         audioFileInput.addEventListener("change", (e) => {
+            firstAudioFileLoaded = true;
             const files = e.target.files;
             if (files.length === 0) return;
 
