@@ -5,10 +5,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Smooth Mesh Bars Visualizer</title>
-    <meta name="description" content="A beautiful, customizable audio visualizer with smooth mesh bars and gradient color controls. Import your own music and enjoy a stunning visual experience." />
+    <meta name="description"
+        content="A beautiful, customizable audio visualizer with smooth mesh bars and gradient color controls. Import your own music and enjoy a stunning visual experience." />
     <meta name="author" content="Mika Lorielle" />
     <meta property="og:title" content="Smooth Mesh Bars Visualizer" />
-    <meta property="og:description" content="A beautiful, customizable audio visualizer with smooth mesh bars and gradient color controls. Import your own music and enjoy a stunning visual experience." />
+    <meta property="og:description"
+        content="A beautiful, customizable audio visualizer with smooth mesh bars and gradient color controls. Import your own music and enjoy a stunning visual experience." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://mikalorielle.github.io/BVisualizer/" />
     <link rel="canonical" href="https://mikalorielle.github.io/BVisualizer/" />
@@ -47,9 +49,12 @@
 
         #controlPanel label {
             display: block;
-            margin-bottom: 0.25rem;
             font-weight: 600;
             font-size: 0.9rem;
+
+            &:not(#audioFileInputLabel) {
+                margin-bottom: 0.25rem;
+            }
         }
 
         #controlPanel .color-field {
@@ -157,17 +162,88 @@
                 background-position: 200% center;
             }
         }
+
+        .no-for-mobile-devices {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            inset: 0;
+            background: rgba(20, 20, 30);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        @media (max-width: 768px),
+        (pointer: coarse) and (hover: none) {
+            .no-for-mobile-devices {
+                display: flex;
+            }
+
+            body>*:not(.no-for-mobile-devices) {
+                display: none !important;
+            }
+        }
+
+        #audioUrlDialog {
+            backdrop-filter: blur(5px);
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            position: absolute;
+            inset: 0;
+            max-width: unset;
+            max-height: unset;
+
+            > div {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+        }
     </style>
 </head>
 
 <body>
+    <div class="no-for-mobile-devices text-pretty">
+        <div>
+            <p class="text-[1.1rem] text-neutral-300 break-words">
+                This visualizer is designed for desktop browsers only.
+            </p>
+            <p class="text-[1.3rem] font-bold text-white">
+                Please use a desktop or laptop
+            </p>
+        </div>
+    </div>
+    <dialog id="audioUrlDialog">
+        <div class="rounded-lg shadow-lg p-0 w-full max-w-md border border-gray-700 bg-gray-900">
+            <form class="p-6">
+                <h2 class="text-xl font-bold text-white mb-4">Enter Audio URL</h2>
+                <input id="audioUrlInput" type="url" placeholder="https://example.com/audio.mp3"
+                    class="w-full px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4 transition-colors transition-shadow duration-200" />
+                <div class="flex justify-end gap-2">
+                    <button id="audioUrlCancelBtn" value="cancel"
+                        class="px-4 py-2 rounded bg-gray-700 text-white hover:bg-gray-600 transition">Cancel</button>
+                    <button id="audioUrlSubmitBtn" value="default"
+                        class="px-4 py-2 rounded bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition">Load</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
     <canvas id="visualizer"></canvas>
     <div id="audioName" class="glow-title"
-        style="position: fixed; top: 1rem; left: 1rem; user-select: none; z-index: 100;">
+    style="position: fixed; top: 1rem; left: 1rem; user-select: none; z-index: 100;"
+    class="glow-title break-words whitespace-pre-line max-w-[90vw] text-balance text-wrap-pretty">
         audio
     </div>
     <audio id="audio" crossorigin="anonymous"></audio>
     <div id="controlPanel" aria-label="Control Panel">
+        <h3 class="text-xl font-semibold mb-1">Colors</h3>
         <div>
             <label for="bgTopColor">Background Top Color</label>
             <div class="color-field">
@@ -200,27 +276,31 @@
         </div>
         <div style="margin-bottom: 1rem;">
             <label for="audioFileInput" id="audioFileInputLabel"
-                class="inline-block cursor-pointer select-none font-semibold bg-gradient-to-r from-purple-500 via-purple-700 to-indigo-700 text-white py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center w-full">
-                <span id="audioFileInputLabelText" class="text-base">Import Song</span>
+                class="inline-block cursor-pointer select-none font-semibold bg-gradient-to-r from-purple-500 via-purple-700 to-indigo-700 text-white py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center w-full mb-2">
+                <span id="audioFileInputLabelText" class="text-base">Import File</span>
             </label>
             <input type="file" id="audioFileInput" accept="audio/*" class="hidden" />
 
+            <button id="pasteUrlBtn" type="button"
+                class="block w-full mb-2 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 text-white font-semibold py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center cursor-pointer">
+                Paste URL
+            </button>
             <button id="resetSettingsBtn" type="button"
-                class="block w-full mt-3 bg-gradient-to-r from-cyan-400 via-indigo-600 to-purple-700 text-white font-semibold py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center cursor-pointer">
+                class="block w-full bg-gradient-to-r from-cyan-400 via-indigo-600 to-purple-700 text-white font-semibold py-2 px-5 rounded-md shadow-md transition-colors transition-transform duration-200 text-base text-center cursor-pointer">
                 Reset Settings
             </button>
         </div>
         <div style="margin-top: 1rem;">
-            <label>Keybindings</label>
-            <div style="margin-bottom: 0.5rem;">
+            <h3 class="text-xl font-semibold mb-1">Keybindings</h3>
+            <div class="mb-0.5">
                 <label>Play/Pause:</label>
                 <input type="text" id="keyPlayPause" />
             </div>
-            <div style="margin-bottom: 0.5rem;">
+            <div class="mb-0.5">
                 <label>Rewind:</label>
                 <input type="text" id="keyRewind" />
             </div>
-            <div style="margin-bottom: 0.5rem;">
+            <div class="mb-0.5">
                 <label>Forward:</label>
                 <input type="text" id="keyForward" />
             </div>
@@ -228,6 +308,65 @@
         <small>Press <b>F</b> to toggle this panel.</small>
     </div>
     <script>
+        const audioDialog = document.getElementById('audioUrlDialog');
+
+        document.getElementById('pasteUrlBtn').addEventListener('click', function() {
+            if (typeof audioDialog.showModal === 'function') {
+                audioDialog.showModal();
+            } else {
+                alert('Sorry, your browser does not support the <dialog> element.');
+            }
+        });
+
+        audioDialog.addEventListener('click', (event) => {
+            if (event.target === audioDialog) {
+                audioDialog.close();
+            }
+        });
+
+        document.getElementById('audioUrlCancelBtn').addEventListener('click', function(event) {
+            event.preventDefault();
+            audioDialog.close();
+        });
+
+        document.getElementById('audioUrlSubmitBtn').addEventListener('click', function(event) {
+            event.preventDefault();
+            audioDialog.close();
+
+            const audioUrlInput = document.getElementById('audioUrlInput');
+            const url = audioUrlInput.value.trim();
+
+            if (url) {
+                firstAudioFileLoaded = true;
+
+                try {
+                    audio.pause();
+                    audio.src = url;
+                    audio.load();
+
+                    try {
+                        const domain = new URL(url).hostname;
+                        audioNameDiv.textContent = domain;
+                    } catch {
+                        audioNameDiv.textContent = url;
+                    }
+
+                    if (audioCtx.state === "suspended") {
+                        audioCtx.resume();
+                    }
+
+                    audio.play();
+                } catch (e) {
+                    console.error(e, 'Failed to load audio from URL', url);
+                    return alert('Failed to load audio from the provided URL. Please ensure it is a valid audio file URL and that CORS policies allow access.');
+                }
+
+                audioUrlInput.value = '';
+            } else {
+                alert('Please enter a valid URL.');
+            }
+        });
+
         const DEFAULT_VALUES = {
             "bg-top": '#000000',
             "bg-bottom": '#2d0769',
@@ -335,11 +474,13 @@
         let firstAudioFileLoaded = false;
 
         document.addEventListener('click', (e) => {
-            if (controlPanel.contains(e.target)) {
+            if (controlPanel.contains(e.target) || audioDialog.contains(e.target)) {
                 return;
             }
 
-            if (!firstAudioFileLoaded) {
+            // Prevent file input click on mobile devices
+            const isMobile = window.matchMedia('(max-width: 768px), (pointer: coarse) and (hover: none)').matches;
+            if (!firstAudioFileLoaded && !isMobile) {
                 return audioFileInput.click();
             }
 
